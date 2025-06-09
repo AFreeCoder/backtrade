@@ -86,4 +86,5 @@ class BacktestEngine:
         """
         绘制回测结果图表
         """
-        self.cerebro.plot(**kwargs) 
+        # self.cerebro.plot(**kwargs) 
+        pass

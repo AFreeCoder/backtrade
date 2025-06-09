@@ -6,7 +6,8 @@ STRATEGY_PARAMS = {
         'lookback_days': 365,
         'percentile_threshold': 10,
         'min_amount': 10000,
-        'profit_threshold': 0.10
+        'profit_threshold': 0.10,
+        'max_loss_threshold': 0.10
     }
     # 可以添加更多策略的参数配置
 } 

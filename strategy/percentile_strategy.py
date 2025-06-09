@@ -54,6 +54,7 @@ class PercentileStrategy(bt.Strategy):
         ('percentile_threshold', 10),  # 百分位阈值
         ('min_amount', 10000),  # 最小买入金额
         ('profit_threshold', 0.10),  # 盈利阈值，10%
+        ('max_loss_threshold', 0.10),  # 最大亏损阈值，10%
     )
 
     def log(self, txt, dt=None):
@@ -80,9 +81,9 @@ class PercentileStrategy(bt.Strategy):
 
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(f'BUY EXECUTED, Date: {self.datetime.datetime(0).date()}, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
+                self.log(f'{self.datetime.datetime(0).date()} BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
             elif order.issell():
-                self.log(f'SELL EXECUTED, Date: {self.datetime.datetime(0).date()}, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
+                self.log(f'{self.datetime.datetime(0).date()} SELL EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
@@ -101,7 +102,6 @@ class PercentileStrategy(bt.Strategy):
         if not self.position:
             # 如果百分位低于阈值，且当前价格 * 股数 > 最小买入金额
             if self.percentile[0] < self.params.percentile_threshold:
-                print(f'{self.datetime.datetime(0).date()}, {self.percentile[0]}, {self.params.percentile_threshold}, {self.percentile[0] < self.params.percentile_threshold}')
                 # 计算可以买入的股数（确保金额超过最小买入金额）
                 price = self.dataclose[0]
                 shares = int(self.params.min_amount / price) + 1 # 直接计算股数，不限制100的整数倍
@@ -118,6 +118,7 @@ class PercentileStrategy(bt.Strategy):
             if profit_ratio > self.params.profit_threshold:
                 self.log(f'{self.datetime.datetime(0).date()} SELL CREATE, {self.position.size} shares at {current_price:.2f}, Profit: {profit_ratio:.2%}')
                 self.order = self.sell(size=self.position.size) 
-            elif profit_ratio < -self.params.profit_threshold:
+            # 如果亏损超过阈值，卖出所有持仓
+            elif profit_ratio < - self.params.max_loss_threshold:
                 self.log(f'{self.datetime.datetime(0).date()} SELL CREATE, {self.position.size} shares at {current_price:.2f}, Profit: {profit_ratio:.2%}')
                 self.order = self.sell(size=self.position.size) 
