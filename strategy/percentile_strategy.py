@@ -1,6 +1,6 @@
 import backtrader as bt
 import numpy as np
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 class PercentileIndicator(bt.Indicator):
     """
@@ -22,19 +22,20 @@ class PercentileIndicator(bt.Indicator):
         current_date = self.datetime.datetime(0)
         start_date = current_date - timedelta(days=self.lookback_days)
 
+        # 如果实际起始日大于目标起始日，则需要增加交易天数
         while self.datetime.datetime(-self.trade_days+1) > start_date and self.trade_days < len(self.dataclose):
             self.trade_days += 1
         
-        # 如果起始日大于目标起始日，说明历史数据不足，抛出异常
-        if self.datetime.datetime(-self.trade_days+1) > start_date:
+        # 如果实际起始日小于目标起始日，则需要减去交易天数
+        while self.datetime.datetime(-self.trade_days+1) < start_date and self.trade_days > 1:
+            self.trade_days -= 1
+        
+        # 如果起始日下一个日期大于目标起始日，说明历史数据不足，抛出异常
+        if self.datetime.datetime(-len(self.dataclose)+1) > start_date:
             self.lines.percentile[0] = float('nan')  # 设置为 NaN，表示跳过计算
             # print(self.trade_days, start_date, self.datetime.datetime(0), len(self.datetime), self.datetime.datetime(-self.trade_days+1))
             # print(f"历史数据不足: 需要从{start_date}开始的历史数据，但只能追溯到{self.datetime.datetime(-self.trade_days)}的数据")
             return
-        
-        # 如果实际起始日小于目标起始日，说明历史数据足够，但需要减去1天
-        if self.datetime.datetime(-self.trade_days+1) < start_date:
-            self.trade_days -= 1
 
         # 收集指定自然日期范围内的所有交易日数据
         historical_data = [self.dataclose[i] for i in range(-self.trade_days+1, 0)]
@@ -43,7 +44,6 @@ class PercentileIndicator(bt.Indicator):
         # 计算当前值在历史数据中的百分位
         data_array = np.array(historical_data)
         percentile = (np.sum(data_array <= current_value) / len(data_array)) * 100
-        
         self.lines.percentile[0] = percentile
 
         # print(f'目标起始日期: {start_date.date()}, 实际起始日期: {self.datetime.datetime(-self.trade_days+1).date()}, 当前日期: {current_date.date()}, 历史数据天数: {self.trade_days}, 百分位: {percentile}')
@@ -59,6 +59,7 @@ class PercentileStrategy(bt.Strategy):
 
     def log(self, txt, dt=None):
         # 简化日志记录，不使用日期
+        # pass
         print(f'{txt}')
 
     def __init__(self):
