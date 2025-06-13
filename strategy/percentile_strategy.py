@@ -1,7 +1,6 @@
 import backtrader as bt
 import numpy as np
 from datetime import timedelta, datetime
-from utils.excel_writer import ExcelWriter
 
 class PercentileIndicator(bt.Indicator):
     """
@@ -71,19 +70,6 @@ class PercentileStrategy(bt.Strategy):
             dataclose=self.dataclose,
             lookback_days=self.params.lookback_days
         )
-        
-        # 初始化Excel写入器
-        self.excel_writer = ExcelWriter('backtest_results.xlsx')
-        
-        # 创建每日数据sheet
-        self.excel_writer.create_sheet('Daily Data', [
-            'Date', 'Close Price', 'Percentile', 'Position Size', 'Total Value'
-        ])
-        
-        # 创建交易记录sheet
-        self.excel_writer.create_sheet('Trade Records', [
-            'Date', 'Action', 'Price', 'Size', 'Value', 'Commission', 'Total Value'
-        ])
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -92,52 +78,14 @@ class PercentileStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(f'{self.datetime.datetime(0).date()} BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
-                # 记录买入交易
-                self.excel_writer.write_row('Trade Records', {
-                    'Date': self.datetime.datetime(0).date(),
-                    'Action': 'BUY EXECUTED',
-                    'Price': order.executed.price,
-                    'Size': order.executed.size,
-                    'Value': order.executed.value,
-                    'Commission': order.executed.comm,
-                    'Total Value': self.broker.getvalue()
-                })
             elif order.issell():
                 self.log(f'{self.datetime.datetime(0).date()} SELL EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
-                # 记录卖出交易
-                self.excel_writer.write_row('Trade Records', {
-                    'Date': self.datetime.datetime(0).date(),
-                    'Action': 'SELL EXECUTED',
-                    'Price': order.executed.price,
-                    'Size': order.executed.size,
-                    'Value': order.executed.value,
-                    'Commission': order.executed.comm,
-                    'Total Value': self.broker.getvalue()
-                })
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
-            # 记录取消/保证金不足/拒绝的交易
-            self.excel_writer.write_row('Trade Records', {
-                'Date': self.datetime.datetime(0).date(),
-                'Action': f'ORDER {order.status}',
-                'Price': order.created.price,
-                'Size': order.created.size,
-                'Value': 0,
-                'Commission': 0,
-                'Total Value': self.broker.getvalue()
-            })
 
         self.order = None
 
     def next(self):
-        # 记录每日数据
-        self.excel_writer.write_row('Daily Data', {
-            'Date': self.datetime.datetime(0).date(),
-            'Close Price': self.dataclose[0],
-            'Percentile': self.percentile[0],
-            'Position Size': self.position.size if self.position else 0,
-            'Total Value': self.broker.getvalue()
-        })
 
         # 如果有挂起的订单，不执行新的订单
         if self.order:
@@ -152,16 +100,7 @@ class PercentileStrategy(bt.Strategy):
                 shares = int(self.params.min_amount / price) + 1
                 
                 self.log(f'{self.datetime.datetime(0).date()} BUY CREATE, {shares} shares at {price:.2f}')
-                # 记录买入创建
-                self.excel_writer.write_row('Trade Records', {
-                    'Date': self.datetime.datetime(0).date(),
-                    'Action': 'BUY CREATE',
-                    'Price': price,
-                    'Size': shares,
-                    'Value': price * shares,
-                    'Commission': 0,
-                    'Total Value': self.broker.getvalue()
-                })
+
                 self.order = self.buy(size=shares)
         else:
             # 计算当前持仓的盈利比例
@@ -172,34 +111,13 @@ class PercentileStrategy(bt.Strategy):
             # 如果盈利超过阈值，卖出所有持仓
             if profit_ratio > self.params.profit_threshold:
                 self.log(f'{self.datetime.datetime(0).date()} SELL CREATE, {self.position.size} shares at {current_price:.2f}, Profit: {profit_ratio:.2%}')
-                # 记录卖出创建
-                self.excel_writer.write_row('Trade Records', {
-                    'Date': self.datetime.datetime(0).date(),
-                    'Action': 'SELL CREATE',
-                    'Price': current_price,
-                    'Size': self.position.size,
-                    'Value': current_price * self.position.size,
-                    'Commission': 0,
-                    'Total Value': self.broker.getvalue()
-                })
+
                 self.order = self.sell(size=self.position.size) 
             # 如果亏损超过阈值，卖出所有持仓
             elif profit_ratio < -self.params.max_loss_threshold:
                 self.log(f'{self.datetime.datetime(0).date()} SELL CREATE, {self.position.size} shares at {current_price:.2f}, Profit: {profit_ratio:.2%}')
-                # 记录卖出创建
-                self.excel_writer.write_row('Trade Records', {
-                    'Date': self.datetime.datetime(0).date(),
-                    'Action': 'SELL CREATE',
-                    'Price': current_price,
-                    'Size': self.position.size,
-                    'Value': current_price * self.position.size,
-                    'Commission': 0,
-                    'Total Value': self.broker.getvalue()
-                })
+
                 self.order = self.sell(size=self.position.size)
 
     def stop(self):
-        """
-        策略结束时保存Excel文件
-        """
-        self.excel_writer.close() 
+        pass
