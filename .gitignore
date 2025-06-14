@@ -194,3 +194,13 @@ cython_debug/
 .cursorindexingignore
 
 *.xlsx
+*.csv
+*.json
+*.log
+*.txt
+*.html
+*.css
+*.js
+*.png
+*.jpg
+*.jpeg
