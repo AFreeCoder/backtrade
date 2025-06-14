@@ -59,10 +59,9 @@ def run_backtest(strategy_name: str, data_file: str, start_date: str, end_date: 
     engine.plot(style='candlestick')
 
 if __name__ == '__main__':
-    # 示例：运行MA交叉策略回测
     run_backtest(
         strategy_name='PercentileStrategy',
         data_file='baidu-sw.xlsx',
-        start_date='2022-03-23',
+        start_date='2022-03-22',
         end_date='2025-06-07'
     ) 

@@ -8,6 +8,7 @@ class PercentileStrategy(bt.Strategy):
         ('min_amount', 10000),  # 最小买入金额
         ('profit_threshold', 0.10),  # 盈利阈值，10%
         ('max_loss_threshold', 0.10),  # 最大亏损阈值，10%
+        ('cooling_days', 3),  # 卖出后的冷静期天数
     )
 
     def log(self, txt, dt=None):
@@ -26,6 +27,9 @@ class PercentileStrategy(bt.Strategy):
         # 计算百分位
         self.percentile = PercentileIndicator()
         self.percentile.csv = True
+
+        # 添加冷静期相关变量
+        self.sell_datetime = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -46,6 +50,8 @@ class PercentileStrategy(bt.Strategy):
                 Comm: {order.executed.comm:.2f}
                 ''')
             elif order.issell():
+                # 记录卖出时间
+                self.sell_datetime = self.datetime.datetime(0)
                 self.log(f'''   
                 {self.datetime.datetime(0).date()} SELL EXECUTED
                 Executed Price: {order.executed.price:.2f}
@@ -69,6 +75,16 @@ class PercentileStrategy(bt.Strategy):
 
         # 检查是否持仓
         if not self.position:
+            # 检查是否在冷静期内
+            if self.sell_datetime:
+                current_dt = self.datetime.datetime(0)
+                days_elapsed = (current_dt - self.sell_datetime).days
+                
+                if days_elapsed < self.params.cooling_days:
+                    return  # 冷静期内不进行买入
+                else:
+                    self.sell_datetime = None  # 清除冷静期
+
             # 如果百分位低于阈值，且当前价格 * 股数 > 最小买入金额
             if self.percentile[0] < self.params.percentile_threshold:
                 # 计算可以买入的股数（确保金额超过最小买入金额）
