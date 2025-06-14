@@ -17,8 +17,11 @@ class BacktestEngine:
         self.cerebro.broker.setcommission(commission=BACKTEST_PARAMS['commission'])
         self.cerebro.broker.set_slippage_perc(BACKTEST_PARAMS['slippage'])
 
+        # 添加 observer
+        # self.cerebro.addobserver(bt.observers.Broker)
+
         # 添加 writer
-        self.cerebro.addwriter(bt.WriterFile, csv=True, out="backtest_results.csv")
+        self.cerebro.addwriter(bt.WriterFile, csv=True, out="backtest_results.csv", csv_counter=True)
 
     def set_strategy(self, strategy_class: bt.Strategy, strategy_params: Optional[Dict[str, Any]] = None):
         """

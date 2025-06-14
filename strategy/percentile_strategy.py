@@ -25,6 +25,7 @@ class PercentileStrategy(bt.Strategy):
         
         # 计算百分位
         self.percentile = PercentileIndicator()
+        self.percentile.csv = True
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -32,9 +33,30 @@ class PercentileStrategy(bt.Strategy):
 
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log(f'{self.datetime.datetime(0).date()} BUY EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
+                # 打印更详细的价格信息
+                self.log(f'''
+                {self.datetime.datetime(0).date()} BUY EXECUTED
+                Executed Price: {order.executed.price:.2f}
+                Executed Size: {order.executed.size}
+                Bar Open: {self.data.open[0]:.2f}
+                Bar High: {self.data.high[0]:.2f}
+                Bar Low: {self.data.low[0]:.2f}
+                Bar Close: {self.data.close[0]:.2f}
+                Cost: {order.executed.value:.2f}
+                Comm: {order.executed.comm:.2f}
+                ''')
             elif order.issell():
-                self.log(f'{self.datetime.datetime(0).date()} SELL EXECUTED, Price: {order.executed.price:.2f}, Cost: {order.executed.value:.2f}, Comm: {order.executed.comm:.2f}')
+                self.log(f'''   
+                {self.datetime.datetime(0).date()} SELL EXECUTED
+                Executed Price: {order.executed.price:.2f}
+                Executed Size: {order.executed.size}
+                Bar Open: {self.data.open[0]:.2f}
+                Bar High: {self.data.high[0]:.2f}
+                Bar Low: {self.data.low[0]:.2f}
+                Bar Close: {self.data.close[0]:.2f}
+                Cost: {order.executed.value:.2f}
+                Comm: {order.executed.comm:.2f}
+                ''')
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
 
