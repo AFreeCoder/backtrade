@@ -1,5 +1,6 @@
 import backtrader as bt
 from indicator.percentile_indicator import PercentileIndicator
+from config.backtest_config import BACKTEST_PARAMS
 
 class PercentileStrategy(bt.Strategy):
     params = (
@@ -24,7 +25,7 @@ class PercentileStrategy(bt.Strategy):
         self.order = None
         
         # 计算百分位
-        self.percentile = PercentileIndicator()
+        self.percentile = PercentileIndicator(lookback_days=self.params.lookback_days)
         self.percentile.csv = True
 
         # 添加冷静期相关变量
@@ -63,7 +64,20 @@ class PercentileStrategy(bt.Strategy):
                 Comm: {order.executed.comm:.2f}
                 ''')
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('Order Canceled/Margin/Rejected')
+            status_map = {
+                order.Canceled: '订单被取消',
+                order.Margin: '保证金不足',
+                order.Rejected: '订单被拒绝'
+            }
+            reason = status_map.get(order.status, '未知原因')
+            self.log(f'''
+            {self.datetime.datetime(0).date()} 订单状态: {reason}
+            订单类型: {'买入' if order.isbuy() else '卖出'}
+            订单大小: {order.created.size}
+            订单价格: {order.created.price:.2f}
+            账户资金: {self.broker.getcash():.2f}
+            订单ID: {order.ref}
+            ''')
 
         self.order = None
 
@@ -88,9 +102,9 @@ class PercentileStrategy(bt.Strategy):
             if self.percentile[0] < self.params.percentile_threshold:
                 # 计算最大可以买入的股数
                 price = self.dataclose[0]
-                shares = int(self.broker.getcash() / price) - 1
+                shares = int(self.broker.getcash() / price / (1 + BACKTEST_PARAMS['commission'] + BACKTEST_PARAMS['slippage']))
                 
-                self.log(f'{self.datetime.datetime(0).date()} BUY CREATE, {shares} shares at {price:.2f}')
+                self.log(f'{self.datetime.datetime(0).date()} BUY CREATE, {shares} shares at {price:.2f}, cash: {self.broker.getcash():.2f}')
 
                 self.order = self.buy(size=shares)
         else:

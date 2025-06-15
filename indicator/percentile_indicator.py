@@ -8,19 +8,17 @@ class PercentileIndicator(bt.Indicator):
     计算当前价格在指定自然日区间内交易日的百分位排名
     """
     lines = ('percentile',)
-    params = (
-        ('lookback_days', 365),  # 自然日天数，默认一年
-    )
     
-    def __init__(self):
+    def __init__(self, lookback_days):
         self.trade_days = 0
+        self.lookback_days = lookback_days
     
     def next(self):
         current_value = self.data.close[0]
         
         # 获取当前日期（backtrader中的日期访问方式）和目标起始日期
         current_date = self.data.datetime.datetime(0)
-        start_date = current_date - timedelta(days=self.p.lookback_days)
+        start_date = current_date - timedelta(days=self.lookback_days)
 
         # 如果实际起始日大于目标起始日，则需要增加交易天数
         while self.data.datetime.datetime(-self.trade_days+1) > start_date and self.trade_days < len(self.data.close):
@@ -40,5 +38,5 @@ class PercentileIndicator(bt.Indicator):
         
         # 计算当前值在历史数据中的百分位
         data_array = np.array(historical_data)
-        percentile = (np.sum(data_array <= current_value) / len(data_array)) * 100
+        percentile = (np.sum(data_array <= current_value) / len(data_array))
         self.lines.percentile[0] = percentile 
