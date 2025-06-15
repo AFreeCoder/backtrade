@@ -5,7 +5,6 @@ class PercentileStrategy(bt.Strategy):
     params = (
         ('lookback_days', 365),  # 自然日天数，默认一年
         ('percentile_threshold', 10),  # 百分位阈值
-        ('min_amount', 10000),  # 最小买入金额
         ('profit_threshold', 0.10),  # 盈利阈值，10%
         ('max_loss_threshold', 0.10),  # 最大亏损阈值，10%
         ('cooling_days', 3),  # 卖出后的冷静期天数
@@ -87,9 +86,9 @@ class PercentileStrategy(bt.Strategy):
 
             # 如果百分位低于阈值，且当前价格 * 股数 > 最小买入金额
             if self.percentile[0] < self.params.percentile_threshold:
-                # 计算可以买入的股数（确保金额超过最小买入金额）
+                # 计算最大可以买入的股数
                 price = self.dataclose[0]
-                shares = int(self.params.min_amount / price) + 1
+                shares = int(self.broker.getcash() / price) - 1
                 
                 self.log(f'{self.datetime.datetime(0).date()} BUY CREATE, {shares} shares at {price:.2f}')
 

@@ -1,3 +1,4 @@
+import math
 import backtrader as bt
 from datetime import datetime
 import pandas as pd
@@ -22,6 +23,15 @@ class BacktestEngine:
 
         # 添加 writer
         self.cerebro.addwriter(bt.WriterFile, csv=True, out="backtest_results.csv", csv_counter=True)
+
+        # 添加 annual return 分析器
+        self.cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name='annual_return')
+
+        # 添加 return 分析器
+        self.cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
+
+        # 设置当前收盘价成交
+        self.cerebro.broker.set_coc(True)
 
     def set_strategy(self, strategy_class: bt.Strategy, strategy_params: Optional[Dict[str, Any]] = None):
         """
@@ -70,7 +80,9 @@ class BacktestEngine:
 
         # 计算回测结果
         total_return = (final_value - initial_value) / initial_value
-        annual_return = total_return * (252 / (end_date - start_date).days)
+        # total_return = results[0].analyzers.returns.get_analysis()['rtot']
+        annual_return = results[0].analyzers.returns.get_analysis()['rnorm']
+        annual_return = math.pow(final_value / initial_value, 365 / (end_date - start_date).days) - 1
 
         return {
             'initial_value': initial_value,
@@ -86,5 +98,5 @@ class BacktestEngine:
         """
         绘制回测结果图表
         """
-        self.cerebro.plot(**kwargs) 
-        # pass
+        # self.cerebro.plot(**kwargs) 
+        pass
