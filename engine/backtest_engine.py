@@ -35,23 +35,17 @@ class BacktestEngine:
             self.cerebro.addstrategy(strategy_class)
         self.strategy = strategy_class
 
-    def set_data(self, data: pd.DataFrame, start_date: datetime, end_date: datetime):
+    def set_data(self, data: pd.DataFrame):
         """
         设置回测数据
         :param data: 数据DataFrame
-        :param start_date: 开始日期
-        :param end_date: 结束日期
         """
         # 使用传入的data参数而不是重新读取文件
         self.data = bt.feeds.PandasData(
-            dataname=data,
-            fromdate=start_date,
-            todate=end_date
+            dataname=data
         )
 
         self.cerebro.adddata(self.data)
-        self.start_date = start_date
-        self.end_date = end_date
 
     def set_initial_cash(self, cash: float):
         """
@@ -61,7 +55,7 @@ class BacktestEngine:
         self.initial_cash = cash
         self.cerebro.broker.setcash(cash)
 
-    def run(self) -> Dict[str, Any]:
+    def run(self, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """
         运行回测
         :return: 回测结果
@@ -71,12 +65,12 @@ class BacktestEngine:
 
         # 运行回测
         initial_value = self.cerebro.broker.getvalue()
-        results = self.cerebro.run()
+        results = self.cerebro.run(fromdate=start_date, todate=end_date)
         final_value = self.cerebro.broker.getvalue()
 
         # 计算回测结果
         total_return = (final_value - initial_value) / initial_value
-        annual_return = total_return * (252 / (self.end_date - self.start_date).days)
+        annual_return = total_return * (252 / (end_date - start_date).days)
 
         return {
             'initial_value': initial_value,
@@ -84,13 +78,13 @@ class BacktestEngine:
             'total_return': total_return,
             'annual_return': annual_return,
             'strategy': self.strategy.__name__,
-            'start_date': self.start_date,
-            'end_date': self.end_date
+            'start_date': start_date,
+            'end_date': end_date
         }
 
     def plot(self, **kwargs):
         """
         绘制回测结果图表
         """
-        # self.cerebro.plot(**kwargs) 
-        pass
+        self.cerebro.plot(**kwargs) 
+        # pass

@@ -7,7 +7,8 @@ STRATEGY_PARAMS = {
         'percentile_threshold': 10,
         'min_amount': 10000,
         'profit_threshold': 0.10,
-        'max_loss_threshold': 0.10
+        'max_loss_threshold': 0.10,
+        'cooling_days': 3
     }
     # 可以添加更多策略的参数配置
 } 

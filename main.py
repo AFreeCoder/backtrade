@@ -38,13 +38,13 @@ def run_backtest(strategy_name: str, data_file: str, start_date: str, end_date: 
         raise ValueError(f"不支持的策略名称: {strategy_name}")
     
     # 设置数据
-    engine.set_data(data, start_date, end_date)
+    engine.set_data(data)
     
     # 设置初始资金
     engine.set_initial_cash(BACKTEST_PARAMS['initial_cash'])
     
     # 运行回测
-    results = engine.run()
+    results = engine.run(start_date, end_date)
     
     # 打印回测结果
     print("\n=== 回测结果 ===")
